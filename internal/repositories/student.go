@@ -63,15 +63,21 @@ func (r *StudentRepo) FindAllStudents() ([]types.Student, error) {
 	return students, nil
 }
 
-func (r *StudentRepo) AddCourse(studentID string, course types.Course) error {
+func (r *StudentRepo) AddCourse(studentID string, courseID string) error {
 	studentObjID, err := primitive.ObjectIDFromHex(studentID)
 	if err != nil {
 		return fmt.Errorf("invalid student ID: %w", err)
 	}
+
+	courseObjID, err := primitive.ObjectIDFromHex(courseID)
+
+	if err != nil {
+		return fmt.Errorf("invalid course ID: %w", err)
+	}
 	_, err = r.MongoCollection.UpdateOne(
 		context.Background(),
 		bson.M{"_id": studentObjID},
-		bson.M{"$addToSet": bson.M{"courses": course}},
+		bson.M{"$addToSet": bson.M{"courses": courseObjID}},
 	)
 	return err
 }
