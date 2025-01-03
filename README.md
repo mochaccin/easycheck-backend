@@ -1,49 +1,50 @@
-# Project money-minder
+# Easycheck
 
-One Paragraph of project description goes here
+Si alguna wea falla taggenme en el ds
 
-## Getting Started
+## Prerequisitos
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+- Go
+- Configurar el .env
 
-## MakeFile
+## Como instalar go
 
-run all make commands with clean tests
-```bash
-make all build
+- Descargar la version que corresponda a su sistema operativo desde aca [Go Downloads](https://go.dev/dl/)
+- Lo instalan como cualquier otro programa
+
+Listo ya tienen go instalado.
+
+Ahora clonan el repo y tienen 2 opciones, buildearlo manual de la siguiente forma
+
+Descargar dependencias
+
+```go
+go mod tidy
+```
+Correr el proyecto
+
+```go
+go run cmd/api/main.go
 ```
 
-build the application
-```bash
-make build
+La otra opcion es utilizar live reloading, cosa que si quieren cambiar algo no tienen que reiniciar como tal.
+
+Para eso hay que usar go/air
+
+Instalan chocolatey que nos permite instalar herramientas de linux en windows, en este caso el comando make para usar el makefile que usa go air.
+
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 ```
 
-run the application
-```bash
-make run
+Despues instalan go air para el hot reloading
+
+```powershell
+go install github.com/air-verse/air@latest
 ```
 
-Create DB container
-```bash
-make docker-run
-```
+Finalmente para ejecutar el proyecto abren una terminal en el vscode y escriben
 
-Shutdown DB container
-```bash
-make docker-down
-```
-
-live reload the application
-```bash
-make watch
-```
-
-run the test suite
-```bash
-make test
-```
-
-clean up binary from the last build
-```bash
-make clean
+```powershell
+air
 ```
