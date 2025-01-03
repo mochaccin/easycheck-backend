@@ -1,12 +1,17 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"money-minder/internal/auth"
 	"money-minder/internal/database"
 	"money-minder/internal/repositories"
 	"money-minder/internal/types"
 	"net/http"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -94,25 +99,17 @@ func GetAllStudents(w http.ResponseWriter, r *http.Request) error {
 	return WriteJSON(w, http.StatusOK, students)
 }
 
-func AddCourseToStudent(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
+func (r *StudentRepo) AddCourse(studentID string, course types.Course) error {
+	studentObjID, err := primitive.ObjectIDFromHex(studentID)
+	if err != nil {
+		return fmt.Errorf("invalid student ID: %w", err)
 	}
-
-	if claims.Role != "teacher" {
-		return APIError{Status: http.StatusForbidden, Msg: "Only teachers can add courses to students"}
-	}
-
-	studentID := r.PathValue("studentID")
-	var course types.Course
-	if err := json.NewDecoder(r.Body).Decode(&course); err != nil {
-		return APIError{Status: http.StatusBadRequest, Msg: "Invalid request body"}
-	}
-	if err := studentRepo.AddCourse(studentID, course); err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
-	}
-	return WriteJSON(w, http.StatusOK, "Course added to student successfully")
+	_, err = r.MongoCollection.UpdateOne(
+		context.Background(),
+		bson.M{"_id": studentObjID},
+		bson.M{"$addToSet": bson.M{"courses": course}},
+	)
+	return err
 }
 
 func RemoveCourseFromStudent(w http.ResponseWriter, r *http.Request) error {
