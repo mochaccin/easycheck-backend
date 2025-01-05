@@ -7,5 +7,5 @@ type Teacher struct {
 	Name     string             `json:"name" bson:"name"`
 	Email    string             `json:"email" bson:"email"`
 	Password string             `json:"password,omitempty" bson:"password"`
-	Courses  []Course           `json:"courses" bson:"courses"`
+	Courses  []Course           `json:"courses,omitempty" bson:"courses,omitempty"`
 }
