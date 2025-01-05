@@ -127,8 +127,13 @@ func (r *CourseRepo) UpdateTeacher(CourseID string, newTeacherID string) error {
 		return err
 	}
 
+	teacherId, err := primitive.ObjectIDFromHex(newTeacherID)
+	if err != nil {
+		return err
+	}
+
 	filter := bson.D{{"_id", id}}
-	update := bson.D{{"$set", bson.D{{"teacher", newTeacherID}}}}
+	update := bson.D{{"$set", bson.D{{"teacher", teacherId}}}}
 
 	_, err = r.MongoCollection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
@@ -202,7 +207,7 @@ func (r *CourseRepo) GetCoursesByStudentID(StudentID string) ([]*types.Course, e
 		return nil, fmt.Errorf("invalid StudentID: %w", err)
 	}
 
-	filter := bson.M{"students": ownerID}
+	filter := bson.M{"students._id": ownerID}
 	var Courses []*types.Course
 
 	cursor, err := r.MongoCollection.Find(context.Background(), filter)

@@ -152,7 +152,7 @@ func (r *StudentRepo) AddAttendance(StudentID string, AttendanceID string, Atten
 	}
 
 	filter := bson.D{{"_id", StudentObjID}}
-	update := bson.D{{"$push", bson.D{{"Attendances", Attendance}}}}
+	update := bson.D{{"$push", bson.D{{"attendances", Attendance}}}}
 
 	_, err = r.MongoCollection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
@@ -178,7 +178,7 @@ func (r *StudentRepo) RemoveAttendance(StudentID string, AttendanceID string, At
 	}
 
 	filter := bson.D{{"_id", StudentObjectID}}
-	update := bson.D{{"$pull", bson.D{{"Attendances", bson.D{{"$eq", Attendance}}}}}}
+	update := bson.D{{"$pull", bson.D{{"attendances", bson.D{{"$eq", Attendance}}}}}}
 
 	_, err = r.MongoCollection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
@@ -195,7 +195,7 @@ func (r *StudentRepo) GetStudentsByCourseID(CourseID string) ([]*types.Student, 
 		return nil, fmt.Errorf("invalid courseID: %w", err)
 	}
 
-	filter := bson.M{"course_id": courseID}
+	filter := bson.M{"courses._id": courseID}
 	var Students []*types.Student
 
 	cursor, err := r.MongoCollection.Find(context.Background(), filter)

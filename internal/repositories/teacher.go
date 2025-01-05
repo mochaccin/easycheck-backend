@@ -142,7 +142,7 @@ func (r *TeacherRepo) RemoveCourse(TeacherID string, CourseID string, CourseRepo
 	}
 
 	filter := bson.D{{"_id", TeacherObjectID}}
-	update := bson.D{{"$pull", bson.D{{"Courses", bson.D{{"$eq", Course}}}}}}
+	update := bson.D{{"$pull", bson.D{{"courses", bson.D{{"$eq", Course}}}}}}
 
 	_, err = r.MongoCollection.UpdateOne(context.Background(), filter, update)
 	if err != nil {
