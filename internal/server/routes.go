@@ -39,34 +39,34 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	// Student routes
 	mux.HandleFunc("POST /students", makeHandler(handlers.CreateStudent))
-	mux.HandleFunc("GET /students/{studentID}", makeHandler(handlers.GetStudentByID))
-	mux.HandleFunc("PATCH /students/{studentID}/courses", makeHandler(handlers.AddStudentCourse))
-	mux.HandleFunc("DELETE /students/{studentID}/courses", makeHandler(handlers.RemoveStudentCourse))
-	mux.HandleFunc("GET /students/{studentID}/courses", jwtMiddleware(makeHandler(handlers.GetAllCoursesByStudentID)))
-	mux.HandleFunc("GET /students/{studentID}/attendances", jwtMiddleware(makeHandler(handlers.GetAllAttendancesByStudentID)))
+	mux.HandleFunc("GET /students/{id}", makeHandler(handlers.GetStudentByID))
+	mux.HandleFunc("PATCH /students/{id}/courses", makeHandler(handlers.AddStudentCourse))
+	mux.HandleFunc("DELETE /students/{id}/courses", makeHandler(handlers.RemoveStudentCourse))
+	mux.HandleFunc("GET /students/{id}/courses", jwtMiddleware(makeHandler(handlers.GetAllCoursesByStudentID)))
+	mux.HandleFunc("GET /students/{id}/attendances", jwtMiddleware(makeHandler(handlers.GetAllAttendancesByStudentID)))
 
 	// Teacher routes
 	mux.HandleFunc("POST /teachers", makeHandler(handlers.CreateTeacher))
-	mux.HandleFunc("GET /teachers/{teacherID}", makeHandler(handlers.GetTeacherByID))
-	mux.HandleFunc("PATCH /teachers/{teacherID}/courses", makeHandler(handlers.AddTeacherCourse))
-	mux.HandleFunc("DELETE /teachers/{teacherID}/courses", makeHandler(handlers.RemoveTeacherCourse))
-	mux.HandleFunc("GET /teachers/{teacherID}/courses", jwtMiddleware(makeHandler(handlers.GetAllCoursesByTeacherID)))
+	mux.HandleFunc("GET /teachers/{id}", makeHandler(handlers.GetTeacherByID))
+	mux.HandleFunc("PATCH /teachers/{id}/courses", makeHandler(handlers.AddTeacherCourse))
+	mux.HandleFunc("DELETE /teachers/{id}/courses", makeHandler(handlers.RemoveTeacherCourse))
+	mux.HandleFunc("GET /teachers/{id}/courses", jwtMiddleware(makeHandler(handlers.GetAllCoursesByTeacherID)))
 
 	// Course routes
 	mux.HandleFunc("POST /courses", makeHandler(handlers.CreateCourse))
-	mux.HandleFunc("GET /courses/{courseID}", makeHandler(handlers.GetCourseByID))
-	mux.HandleFunc("DELETE /courses/{courseID}", makeHandler(handlers.DeleteCourse))
-	mux.HandleFunc("PATCH /courses/{courseID}/teacher", makeHandler(handlers.UpdateCourseTeacher))
-	mux.HandleFunc("PATCH /courses/{courseID}/students", makeHandler(handlers.AddCourseStudent))
-	mux.HandleFunc("DELETE /courses/{courseID}/students", makeHandler(handlers.RemoveCourseStudent))
-	mux.HandleFunc("GET /courses/{courseID}/students", jwtMiddleware(makeHandler(handlers.GetAllStudentsByCourseID)))
+	mux.HandleFunc("GET /courses/{id}", makeHandler(handlers.GetCourseByID))
+	mux.HandleFunc("DELETE /courses/{id}", makeHandler(handlers.DeleteCourse))
+	mux.HandleFunc("PATCH /courses/{id}/teacher", makeHandler(handlers.UpdateCourseTeacher))
+	mux.HandleFunc("PATCH /courses/{id}/students", makeHandler(handlers.AddCourseStudent))
+	mux.HandleFunc("DELETE /courses/{id}/students", makeHandler(handlers.RemoveCourseStudent))
+	mux.HandleFunc("GET /courses/{id}/students", jwtMiddleware(makeHandler(handlers.GetAllStudentsByCourseID)))
 
 	// Attendance routes
 	mux.HandleFunc("POST /attendance", makeHandler(handlers.CreateAttendance))
-	mux.HandleFunc("PATCH /attendance/{attendanceID}", makeHandler(handlers.UpdateAttendance))
-	mux.HandleFunc("DELETE /attendance/{attendanceID}", makeHandler(handlers.DeleteAttendance))
-	mux.HandleFunc("GET /attendance/byCourse/{courseID}", jwtMiddleware(makeHandler(handlers.GetAllAttendancesByCourseID)))
-	mux.HandleFunc("GET /attendance/byStudent/{studentID}", jwtMiddleware(makeHandler(handlers.GetAllAttendancesByStudentID)))
+	mux.HandleFunc("PATCH /attendance/{id}", makeHandler(handlers.UpdateAttendance))
+	mux.HandleFunc("DELETE /attendance/{id}", makeHandler(handlers.DeleteAttendance))
+	mux.HandleFunc("GET /attendance/byCourse/{id}", jwtMiddleware(makeHandler(handlers.GetAllAttendancesByCourseID)))
+	mux.HandleFunc("GET /attendance/byStudent/{id}", jwtMiddleware(makeHandler(handlers.GetAllAttendancesByStudentID)))
 
 	// Auth routes
 	mux.HandleFunc("POST /auth/register", makeHandler(handlers.Register))

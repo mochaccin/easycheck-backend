@@ -34,6 +34,7 @@ func (r *StudentRepo) DeleteStudent(usr *types.Student) (interface{}, error) {
 
 func (r *StudentRepo) FindStudentByID(usrID string) (*types.Student, error) {
 	id, err := primitive.ObjectIDFromHex(usrID)
+
 	if err != nil {
 		return nil, err
 	}
