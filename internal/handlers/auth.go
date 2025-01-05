@@ -127,5 +127,8 @@ func Login(w http.ResponseWriter, r *http.Request) error {
 		return APIError{Status: http.StatusInternalServerError, Msg: "Error generating token"}
 	}
 
-	return WriteJSON(w, http.StatusOK, map[string]string{"token": tokenString})
+	return WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"token": tokenString,
+		"id":    id,
+	})
 }
