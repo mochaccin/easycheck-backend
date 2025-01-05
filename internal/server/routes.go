@@ -40,37 +40,33 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// Student routes
 	mux.HandleFunc("POST /students", jwtMiddleware(makeHandler(handlers.CreateStudent)))
 	mux.HandleFunc("GET /students/{studentID}", jwtMiddleware(makeHandler(handlers.GetStudentByID)))
-	mux.HandleFunc("DELETE /students/{studentID}", jwtMiddleware(makeHandler(handlers.DeleteStudent)))
-	mux.HandleFunc("PATCH /students/{studentID}/courses", jwtMiddleware(makeHandler(handlers.AddCourseToStudent)))
-	mux.HandleFunc("DELETE /students/{studentID}/courses", jwtMiddleware(makeHandler(handlers.RemoveCourseFromStudent)))
+	mux.HandleFunc("PATCH /students/{studentID}/courses", jwtMiddleware(makeHandler(handlers.AddStudentCourse)))
+	mux.HandleFunc("DELETE /students/{studentID}/courses", jwtMiddleware(makeHandler(handlers.RemoveStudentCourse)))
 	mux.HandleFunc("GET /students/{studentID}/courses", jwtMiddleware(makeHandler(handlers.GetAllCoursesByStudentID)))
 	mux.HandleFunc("GET /students/{studentID}/attendances", jwtMiddleware(makeHandler(handlers.GetAllAttendancesByStudentID)))
-	mux.HandleFunc("GET /students", jwtMiddleware(makeHandler(handlers.GetAllStudents)))
 
 	// Teacher routes
 	mux.HandleFunc("POST /teachers", jwtMiddleware(makeHandler(handlers.CreateTeacher)))
 	mux.HandleFunc("GET /teachers/{teacherID}", jwtMiddleware(makeHandler(handlers.GetTeacherByID)))
-	mux.HandleFunc("DELETE /teachers/{teacherID}", jwtMiddleware(makeHandler(handlers.DeleteTeacher)))
-	mux.HandleFunc("PATCH /teachers/{teacherID}/courses", jwtMiddleware(makeHandler(handlers.AddCourseToTeacher)))
-	mux.HandleFunc("DELETE /teachers/{teacherID}/courses", jwtMiddleware(makeHandler(handlers.RemoveCourseFromTeacher)))
+	mux.HandleFunc("PATCH /teachers/{teacherID}/courses", jwtMiddleware(makeHandler(handlers.AddTeacherCourse)))
+	mux.HandleFunc("DELETE /teachers/{teacherID}/courses", jwtMiddleware(makeHandler(handlers.RemoveTeacherCourse)))
 	mux.HandleFunc("GET /teachers/{teacherID}/courses", jwtMiddleware(makeHandler(handlers.GetAllCoursesByTeacherID)))
-	mux.HandleFunc("GET /teachers", jwtMiddleware(makeHandler(handlers.GetAllTeachers)))
 
 	// Course routes
 	mux.HandleFunc("POST /courses", jwtMiddleware(makeHandler(handlers.CreateCourse)))
 	mux.HandleFunc("GET /courses/{courseID}", jwtMiddleware(makeHandler(handlers.GetCourseByID)))
 	mux.HandleFunc("DELETE /courses/{courseID}", jwtMiddleware(makeHandler(handlers.DeleteCourse)))
-	mux.HandleFunc("PATCH /courses/{courseID}/teacher", jwtMiddleware(makeHandler(handlers.ChangeTeacher)))
-	mux.HandleFunc("PATCH /courses/{courseID}/students", jwtMiddleware(makeHandler(handlers.AddStudentToCourse)))
-	mux.HandleFunc("DELETE /courses/{courseID}/students", jwtMiddleware(makeHandler(handlers.RemoveStudentFromCourse)))
+	mux.HandleFunc("PATCH /courses/{courseID}/teacher", jwtMiddleware(makeHandler(handlers.UpdateCourseTeacher)))
+	mux.HandleFunc("PATCH /courses/{courseID}/students", jwtMiddleware(makeHandler(handlers.AddCourseStudent)))
+	mux.HandleFunc("DELETE /courses/{courseID}/students", jwtMiddleware(makeHandler(handlers.RemoveCourseStudent)))
 	mux.HandleFunc("GET /courses/{courseID}/students", jwtMiddleware(makeHandler(handlers.GetAllStudentsByCourseID)))
 
 	// Attendance routes
 	mux.HandleFunc("POST /attendance", jwtMiddleware(makeHandler(handlers.CreateAttendance)))
 	mux.HandleFunc("PATCH /attendance/{attendanceID}", jwtMiddleware(makeHandler(handlers.UpdateAttendance)))
 	mux.HandleFunc("DELETE /attendance/{attendanceID}", jwtMiddleware(makeHandler(handlers.DeleteAttendance)))
-	mux.HandleFunc("GET /attendance/byCourse/{courseID}", jwtMiddleware(makeHandler(handlers.GetAllAttendanceByCourseID)))
-	mux.HandleFunc("GET /attendance/byStudent/{studentID}", jwtMiddleware(makeHandler(handlers.GetAllAttendanceByStudentID)))
+	mux.HandleFunc("GET /attendance/byCourse/{courseID}", jwtMiddleware(makeHandler(handlers.GetAllAttendancesByCourseID)))
+	mux.HandleFunc("GET /attendance/byStudent/{studentID}", jwtMiddleware(makeHandler(handlers.GetAllAttendancesByStudentID)))
 
 	// Auth routes
 	mux.HandleFunc("POST /auth/register", makeHandler(handlers.Register))

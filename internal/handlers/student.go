@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"money-minder/internal/auth"
 	"money-minder/internal/database"
 	"money-minder/internal/repositories"
 	"money-minder/internal/types"
@@ -10,166 +9,176 @@ import (
 )
 
 var (
-	service     = database.New()
-	studentRepo = &repositories.StudentRepo{
+	service           = database.New()
+	studentRepository = &repositories.StudentRepo{
 		MongoCollection: service.GetCollection("students"),
+	}
+	courseRepository = &repositories.CourseRepo{
+		MongoCollection: service.GetCollection("courses"),
+	}
+	attendanceRepository = &repositories.AttendanceRepo{
+		MongoCollection: service.GetCollection("attendances"),
 	}
 )
 
 func CreateStudent(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
+	usr := &types.Student{}
+	derr := json.NewDecoder(r.Body).Decode(usr)
+
+	if derr != nil {
+		return APIError{
+			Status: http.StatusBadRequest,
+			Msg:    "Couldnt create Student, verify that the values are formatted correctly",
+		}
 	}
 
-	if claims.Role != "teacher" {
-		return APIError{Status: http.StatusForbidden, Msg: "Only teachers can create students"}
-	}
-
-	var student types.Student
-	if err := json.NewDecoder(r.Body).Decode(&student); err != nil {
-		return APIError{Status: http.StatusBadRequest, Msg: "Invalid request body"}
-	}
-
-	result, err := studentRepo.InsertStudent(&student)
+	result, err := studentRepository.InsertStudent(usr)
 	if err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
 	}
 
-	return WriteJSON(w, http.StatusCreated, result)
-}
-
-func DeleteStudent(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
-	}
-
-	if claims.Role != "teacher" {
-		return APIError{Status: http.StatusForbidden, Msg: "Only teachers can delete students"}
-	}
-
-	studentID := r.PathValue("studentID")
-	if err := studentRepo.DeleteStudent(studentID); err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
-	}
-	return WriteJSON(w, http.StatusOK, "Student deleted successfully")
+	return WriteJSON(w, http.StatusOK, result)
 }
 
 func GetStudentByID(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
-	}
 
-	studentID := r.PathValue("studentID")
-	if claims.Role == "student" && claims.ID != studentID {
-		return APIError{Status: http.StatusForbidden, Msg: "Students can only view their own information"}
-	}
+	id := r.PathValue("id")
 
-	student, err := studentRepo.FindStudentByID(studentID)
+	Student, err := studentRepository.FindStudentByID(id)
+
 	if err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
 	}
-	if student == nil {
-		return APIError{Status: http.StatusNotFound, Msg: "Student not found"}
-	}
-	return WriteJSON(w, http.StatusOK, student)
+
+	return WriteJSON(w, http.StatusOK, Student)
 }
 
-func GetAllStudents(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
+func AddStudentCourse(w http.ResponseWriter, r *http.Request) error {
+
+	StudentId := r.PathValue("id")
+
+	addCourseRequest := &StudentCourseRequest{}
+	derr := json.NewDecoder(r.Body).Decode(addCourseRequest)
+
+	if derr != nil {
+		return APIError{
+			Status: http.StatusBadRequest,
+			Msg:    "Couldnt add Course to Student, verify that the values are formatted correctly",
+		}
 	}
 
-	if claims.Role != "teacher" {
-		return APIError{Status: http.StatusForbidden, Msg: "Only teachers can view all students"}
-	}
-
-	students, err := studentRepo.FindAllStudents()
+	err := studentRepository.AddCourse(StudentId, addCourseRequest.CourseId, courseRepository)
 	if err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
 	}
-	return WriteJSON(w, http.StatusOK, students)
+
+	return WriteJSON(w, http.StatusOK, "New Course added sucessfully.")
 }
 
-func AddCourseToStudent(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
+func RemoveStudentCourse(w http.ResponseWriter, r *http.Request) error {
+
+	StudentId := r.PathValue("id")
+
+	removeCourseRequest := &StudentCourseRequest{}
+	derr := json.NewDecoder(r.Body).Decode(removeCourseRequest)
+
+	if derr != nil {
+		return APIError{
+			Status: http.StatusBadRequest,
+			Msg:    "Couldnt remove Course to from, verify that the values are formatted correctly",
+		}
 	}
 
-	if claims.Role != "teacher" {
-		return APIError{Status: http.StatusForbidden, Msg: "Only teachers can add courses to students"}
-	}
-
-	studentID := r.PathValue("studentID")
-	var course types.Course
-	if err := json.NewDecoder(r.Body).Decode(&course); err != nil {
-		return APIError{Status: http.StatusBadRequest, Msg: "Invalid request body"}
-	}
-	if err := studentRepo.AddCourse(studentID, course); err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
-	}
-	return WriteJSON(w, http.StatusOK, "Course added to student successfully")
-}
-
-func RemoveCourseFromStudent(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
-	}
-
-	if claims.Role != "teacher" {
-		return APIError{Status: http.StatusForbidden, Msg: "Only teachers can remove courses from students"}
-	}
-
-	studentID := r.PathValue("studentID")
-	var req struct {
-		CourseID string `json:"courseId"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return APIError{Status: http.StatusBadRequest, Msg: "Invalid request body"}
-	}
-	if err := studentRepo.RemoveCourse(studentID, req.CourseID); err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
-	}
-	return WriteJSON(w, http.StatusOK, "Course removed from student successfully")
-}
-
-func GetAllCoursesByStudentID(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
-	}
-
-	studentID := r.PathValue("studentID")
-	if claims.Role == "student" && claims.ID != studentID {
-		return APIError{Status: http.StatusForbidden, Msg: "Students can only view their own courses"}
-	}
-
-	courses, err := studentRepo.GetAllCoursesByStudentID(studentID)
+	err := studentRepository.RemoveCourse(StudentId, removeCourseRequest.CourseId, courseRepository)
 	if err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
 	}
-	return WriteJSON(w, http.StatusOK, courses)
+
+	return WriteJSON(w, http.StatusOK, "Course deleted sucessfully.")
 }
 
-func GetAllAttendancesByStudentID(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
+func AddStudentAttendance(w http.ResponseWriter, r *http.Request) error {
+
+	StudentId := r.PathValue("id")
+
+	addAttendanceRequest := &studentAttendanceRequest{}
+	derr := json.NewDecoder(r.Body).Decode(addAttendanceRequest)
+
+	if derr != nil {
+		return APIError{
+			Status: http.StatusBadRequest,
+			Msg:    "Couldnt add Attendance to Student, verify that the values are formatted correctly",
+		}
 	}
 
-	studentID := r.PathValue("studentID")
-	if claims.Role == "student" && claims.ID != studentID {
-		return APIError{Status: http.StatusForbidden, Msg: "Students can only view their own attendance"}
-	}
-
-	attendances, err := studentRepo.GetAllAttendancesByStudentID(studentID)
+	err := studentRepository.AddAttendance(StudentId, addAttendanceRequest.AttendanceId, attendanceRepository)
 	if err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
 	}
-	return WriteJSON(w, http.StatusOK, attendances)
+
+	return WriteJSON(w, http.StatusOK, "New Attendance added sucessfully.")
+}
+
+func RemoveStudentAttendance(w http.ResponseWriter, r *http.Request) error {
+
+	StudentId := r.PathValue("id")
+
+	removeAttendanceRequest := &studentAttendanceRequest{}
+	derr := json.NewDecoder(r.Body).Decode(removeAttendanceRequest)
+
+	if derr != nil {
+		return APIError{
+			Status: http.StatusBadRequest,
+			Msg:    "Couldnt remove Attendance from Student, verify that the values are formatted correctly",
+		}
+	}
+
+	err := studentRepository.RemoveAttendance(StudentId, removeAttendanceRequest.AttendanceId, attendanceRepository)
+	if err != nil {
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
+	}
+
+	return WriteJSON(w, http.StatusOK, "Attendance deleted sucessfully.")
+}
+
+func GetAllStudentsByCourseID(w http.ResponseWriter, r *http.Request) error {
+
+	id := r.PathValue("id")
+
+	Students, err := studentRepository.GetStudentsByCourseID(id)
+
+	if err != nil {
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
+	}
+
+	return WriteJSON(w, http.StatusOK, Students)
+}
+
+type StudentCourseRequest struct {
+	CourseId string `json:"CourseId" bson:"course_id"`
+}
+
+type studentAttendanceRequest struct {
+	AttendanceId string `json:"AttendanceId" bson:"attendance_id"`
 }

@@ -14,94 +14,45 @@ type TeacherRepo struct {
 	MongoCollection *mongo.Collection
 }
 
-func (r *TeacherRepo) InsertTeacher(teacher *types.Teacher) (interface{}, error) {
-	result, err := r.MongoCollection.InsertOne(context.Background(), teacher)
+func (r *TeacherRepo) InsertTeacher(usr *types.Teacher) (interface{}, error) {
+	result, err := r.MongoCollection.InsertOne((context.Background()), usr)
 	if err != nil {
 		return nil, err
 	}
-	return result.InsertedID, nil
+
+	return result, nil
 }
 
-func (r *TeacherRepo) DeleteTeacher(teacherID string) error {
-	id, err := primitive.ObjectIDFromHex(teacherID)
-	if err != nil {
-		return err
-	}
-	_, err = r.MongoCollection.DeleteOne(context.Background(), bson.M{"_id": id})
-	return err
-}
-
-func (r *TeacherRepo) FindTeacherByID(teacherID string) (*types.Teacher, error) {
-	id, err := primitive.ObjectIDFromHex(teacherID)
+func (r *TeacherRepo) DeleteTeacher(usr *types.Teacher) (interface{}, error) {
+	result, err := r.MongoCollection.DeleteOne((context.Background()), usr)
 	if err != nil {
 		return nil, err
 	}
-	var teacher types.Teacher
-	err = r.MongoCollection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&teacher)
+
+	return result, nil
+}
+
+func (r *TeacherRepo) FindTeacherByID(usrID string) (*types.Teacher, error) {
+	id, err := primitive.ObjectIDFromHex(usrID)
 	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.D{{"_id", id}}
+
+	var usr types.Teacher
+
+	err = r.MongoCollection.FindOne(context.Background(), filter).Decode(&usr)
+	if err != nil {
+
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
+
 		return nil, err
 	}
-	return &teacher, nil
-}
 
-func (r *TeacherRepo) FindAllTeachers() ([]types.Teacher, error) {
-	cursor, err := r.MongoCollection.Find(context.Background(), bson.M{})
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(context.Background())
-
-	var teachers []types.Teacher
-	if err = cursor.All(context.Background(), &teachers); err != nil {
-		return nil, err
-	}
-	return teachers, nil
-}
-
-func (r *TeacherRepo) AddCourse(teacherID string, course types.Course) error {
-	teacherObjID, err := primitive.ObjectIDFromHex(teacherID)
-	if err != nil {
-		return fmt.Errorf("invalid teacher ID: %w", err)
-	}
-	_, err = r.MongoCollection.UpdateOne(
-		context.Background(),
-		bson.M{"_id": teacherObjID},
-		bson.M{"$addToSet": bson.M{"courses": course}},
-	)
-	return err
-}
-
-func (r *TeacherRepo) RemoveCourse(teacherID string, courseID string) error {
-	teacherObjID, err := primitive.ObjectIDFromHex(teacherID)
-	if err != nil {
-		return fmt.Errorf("invalid teacher ID: %w", err)
-	}
-	courseObjID, err := primitive.ObjectIDFromHex(courseID)
-	if err != nil {
-		return fmt.Errorf("invalid course ID: %w", err)
-	}
-	_, err = r.MongoCollection.UpdateOne(
-		context.Background(),
-		bson.M{"_id": teacherObjID},
-		bson.M{"$pull": bson.M{"courses": bson.M{"_id": courseObjID}}},
-	)
-	return err
-}
-
-func (r *TeacherRepo) GetAllCoursesByTeacherID(teacherID string) ([]types.Course, error) {
-	id, err := primitive.ObjectIDFromHex(teacherID)
-	if err != nil {
-		return nil, err
-	}
-	var teacher types.Teacher
-	err = r.MongoCollection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&teacher)
-	if err != nil {
-		return nil, err
-	}
-	return teacher.Courses, nil
+	return &usr, nil
 }
 
 func (r *TeacherRepo) FindTeacherByEmail(email string) (*types.Teacher, error) {
@@ -114,4 +65,89 @@ func (r *TeacherRepo) FindTeacherByEmail(email string) (*types.Teacher, error) {
 		return nil, err
 	}
 	return &teacher, nil
+}
+
+func (r *TeacherRepo) FindAllTeachers() ([]types.Teacher, error) {
+	results, err := r.MongoCollection.Find(context.Background(), bson.D{})
+	if err != nil {
+		return nil, err
+	}
+
+	var usrs []types.Teacher
+
+	err = results.All(context.Background(), &usrs)
+	if err != nil {
+		return nil, fmt.Errorf("Find all uses results decode error %s", err.Error())
+	}
+
+	return usrs, nil
+}
+
+func (r *TeacherRepo) UpdateName(usrID string, newName string) error {
+	id, err := primitive.ObjectIDFromHex(usrID)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.D{{"_id", id}}
+	update := bson.D{{"$set", bson.D{{"name", newName}}}}
+
+	_, err = r.MongoCollection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *TeacherRepo) AddCourse(TeacherID string, CourseID string, CourseRepo *CourseRepo) error {
+
+	TeacherObjectID, err := primitive.ObjectIDFromHex(TeacherID)
+	if err != nil {
+		return fmt.Errorf("invalid Teacher ID: %w", err)
+	}
+
+	Course, err := CourseRepo.FindCourseByID(CourseID)
+	if err != nil {
+		return fmt.Errorf("failed to find Course: %w", err)
+	}
+	if Course == nil {
+		return fmt.Errorf("Course not found")
+	}
+
+	filter := bson.D{{"_id", TeacherObjectID}}
+	update := bson.D{{"$push", bson.D{{"courses", Course}}}}
+
+	_, err = r.MongoCollection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to add Course to Teacher: %w", err)
+	}
+
+	return nil
+}
+
+func (r *TeacherRepo) RemoveCourse(TeacherID string, CourseID string, CourseRepo *CourseRepo) error {
+
+	TeacherObjectID, err := primitive.ObjectIDFromHex(TeacherID)
+	if err != nil {
+		return fmt.Errorf("invalid Teacher ID: %w", err)
+	}
+
+	Course, err := CourseRepo.FindCourseByID(CourseID)
+	if err != nil {
+		return fmt.Errorf("failed to find Course: %w", err)
+	}
+	if Course == nil {
+		return fmt.Errorf("Course not found")
+	}
+
+	filter := bson.D{{"_id", TeacherObjectID}}
+	update := bson.D{{"$pull", bson.D{{"Courses", bson.D{{"$eq", Course}}}}}}
+
+	_, err = r.MongoCollection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to delete Course from Teacher: %w", err)
+	}
+
+	return nil
 }

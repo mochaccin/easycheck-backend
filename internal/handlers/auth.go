@@ -49,14 +49,14 @@ func Register(w http.ResponseWriter, r *http.Request) error {
 			Email:    registerRequest.Email,
 			Password: string(hashedPassword),
 		}
-		result, err = studentRepo.InsertStudent(student)
+		result, err = studentRepository.InsertStudent(student)
 	case "teacher":
 		teacher := &types.Teacher{
 			Name:     registerRequest.Name,
 			Email:    registerRequest.Email,
 			Password: string(hashedPassword),
 		}
-		result, err = teacherRepo.InsertTeacher(teacher)
+		result, err = teacherRepository.InsertTeacher(teacher)
 	default:
 		return APIError{Status: http.StatusBadRequest, Msg: "Invalid role"}
 	}
@@ -86,14 +86,14 @@ func Login(w http.ResponseWriter, r *http.Request) error {
 
 	switch loginRequest.Role {
 	case "student":
-		student, err := studentRepo.FindStudentByEmail(loginRequest.Email)
+		student, err := studentRepository.FindStudentByEmail(loginRequest.Email)
 		if err != nil {
 			return APIError{Status: http.StatusUnauthorized, Msg: "Invalid credentials"}
 		}
 		id = student.ID
 		password = student.Password
 	case "teacher":
-		teacher, err := teacherRepo.FindTeacherByEmail(loginRequest.Email)
+		teacher, err := teacherRepository.FindTeacherByEmail(loginRequest.Email)
 		if err != nil {
 			return APIError{Status: http.StatusUnauthorized, Msg: "Invalid credentials"}
 		}

@@ -2,111 +2,121 @@ package handlers
 
 import (
 	"encoding/json"
-	"money-minder/internal/auth"
-	"money-minder/internal/repositories"
 	"money-minder/internal/types"
 	"net/http"
 )
 
-var (
-	attendanceRepo = &repositories.AttendanceRepo{
-		MongoCollection: service.GetCollection("attendances"),
-	}
-)
-
 func CreateAttendance(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
+	Attendance := &types.Attendance{}
+	derr := json.NewDecoder(r.Body).Decode(Attendance)
+
+	if derr != nil {
+		return APIError{
+			Status: http.StatusBadRequest,
+			Msg:    "Could not create Attendance, verify that the values are formatted correctly",
+		}
 	}
 
-	if claims.Role != "teacher" {
-		return APIError{Status: http.StatusForbidden, Msg: "Only teachers can create attendance"}
-	}
-
-	var attendance types.Attendance
-	if err := json.NewDecoder(r.Body).Decode(&attendance); err != nil {
-		return APIError{Status: http.StatusBadRequest, Msg: "Invalid request body"}
-	}
-
-	result, err := attendanceRepo.InsertAttendance(&attendance)
+	result, err := attendanceRepository.InsertAttendance(Attendance)
 	if err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
 	}
 
-	return WriteJSON(w, http.StatusCreated, result)
+	return WriteJSON(w, http.StatusOK, result)
 }
 
 func DeleteAttendance(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
+
+	AttendanceId := r.PathValue("id")
+
+	result, err := attendanceRepository.DeleteAttendance(AttendanceId)
+
+	if err != nil {
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
 	}
 
-	if claims.Role != "teacher" {
-		return APIError{Status: http.StatusForbidden, Msg: "Only teachers can delete attendance"}
-	}
-
-	attendanceID := r.PathValue("attendanceID")
-	if err := attendanceRepo.DeleteAttendance(attendanceID); err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
-	}
-	return WriteJSON(w, http.StatusOK, "Attendance deleted successfully")
+	return WriteJSON(w, http.StatusOK, result)
 }
 
 func UpdateAttendance(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
+
+	userId := r.PathValue("id")
+
+	updateUsr := &UpdateAttendanceRequest{}
+	derr := json.NewDecoder(r.Body).Decode(updateUsr)
+
+	if derr != nil {
+		return APIError{
+			Status: http.StatusBadRequest,
+			Msg:    "Couldnt update attendance isPresent value, verify that the values are formatted correctly",
+		}
 	}
 
-	if claims.Role != "teacher" {
-		return APIError{Status: http.StatusForbidden, Msg: "Only teachers can update attendance"}
+	err := attendanceRepository.UpdatePresent(userId, updateUsr.IsPresent)
+	if err != nil {
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
 	}
 
-	attendanceID := r.PathValue("attendanceID")
-	var updatedAttendance types.Attendance
-	if err := json.NewDecoder(r.Body).Decode(&updatedAttendance); err != nil {
-		return APIError{Status: http.StatusBadRequest, Msg: "Invalid request body"}
-	}
-	if err := attendanceRepo.UpdateAttendance(attendanceID, &updatedAttendance); err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
-	}
-	return WriteJSON(w, http.StatusOK, "Attendance updated successfully")
+	return WriteJSON(w, http.StatusOK, "Attendance's isPresent value updated succesfully")
 }
 
-func GetAllAttendanceByCourseID(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
-	}
+func GetAttendanceByID(w http.ResponseWriter, r *http.Request) error {
 
-	if claims.Role != "teacher" {
-		return APIError{Status: http.StatusForbidden, Msg: "Only teachers can see the course attendance"}
-	}
+	AttendanceId := r.PathValue("id")
 
-	courseID := r.PathValue("courseID")
-	attendances, err := attendanceRepo.GetAllAttendanceByCourseID(courseID)
+	Attendance, err := attendanceRepository.FindAttendanceByID(AttendanceId)
+
 	if err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
 	}
+
+	return WriteJSON(w, http.StatusOK, Attendance)
+}
+
+func GetAllAttendancesByCourseID(w http.ResponseWriter, r *http.Request) error {
+
+	CourseID := r.PathValue("id")
+
+	cards, err := attendanceRepository.GetAttendancesByCourseID(CourseID)
+
+	if err != nil {
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
+	}
+
+	return WriteJSON(w, http.StatusOK, cards)
+}
+
+func GetAllAttendancesByStudentID(w http.ResponseWriter, r *http.Request) error {
+
+	StudentID := r.PathValue("id")
+
+	attendances, err := attendanceRepository.GetAttendancesByStudentID(StudentID)
+
+	if err != nil {
+		return APIError{
+			Status: http.StatusInternalServerError,
+			Msg:    err.Error(),
+		}
+	}
+
 	return WriteJSON(w, http.StatusOK, attendances)
 }
 
-func GetAllAttendanceByStudentID(w http.ResponseWriter, r *http.Request) error {
-	claims, ok := auth.GetClaims(r.Context())
-	if !ok {
-		return APIError{Status: http.StatusUnauthorized, Msg: "Unauthorized"}
-	}
-
-	studentID := r.PathValue("studentID")
-	if claims.Role == "student" && claims.ID != studentID {
-		return APIError{Status: http.StatusForbidden, Msg: "Students can only view their own attendance"}
-	}
-
-	attendances, err := attendanceRepo.GetAllAttendanceByStudentID(studentID)
-	if err != nil {
-		return APIError{Status: http.StatusInternalServerError, Msg: err.Error()}
-	}
-	return WriteJSON(w, http.StatusOK, attendances)
+type UpdateAttendanceRequest struct {
+	IsPresent bool `json:"isPresent" bson:"present"`
 }
