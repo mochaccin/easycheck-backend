@@ -10,6 +10,7 @@ type Attendance struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	CourseID  primitive.ObjectID `json:"courseId" bson:"course_id"`
 	StudentID primitive.ObjectID `json:"studentId" bson:"student_id"`
+	Type      string             `json:"type" bson:"type"`
 	Date      time.Time          `json:"date" bson:"date"`
 	Present   bool               `json:"present" bson:"present"`
 }
